@@ -1,5 +1,11 @@
 "use client"
 import { useState } from "react"
+import { createClient } from "@supabase/supabase-js"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const servicios = [
   "Carrocería + interior (Sin motor) - $20",
@@ -25,12 +31,36 @@ export default function Reserva() {
   const [patente, setPatente] = useState("")
   const [servicio, setServicio] = useState(servicios[0])
   const [tel, setTel] = useState("")
+  const [fecha, setFecha] = useState("")
+  const [hora, setHora] = useState("")
+  const [cargando, setCargando] = useState(false)
 
-  const reservar = () => {
-    if(!nombre ||!patente ||!tel) { alert("Completá todo"); return }
-    const mensaje = `¡Nueva reserva El Portugués!%0ACliente: ${nombre}%0APatente: ${patente}%0AServicio: ${servicio}%0ATel: ${tel}`
+  const reservar = async () => {
+    if(!nombre ||!patente ||!tel ||!fecha ||!hora) { alert("Completá todo: nombre, patente, tel, fecha y hora"); return }
+
+    setCargando(true)
+
+    // 1. Guardar en Supabase con fecha y hora
+    const { error } = await supabase.from("reservas").insert([
+      { nombre, patente, telefono: tel, servicio, fecha, hora }
+    ])
+
+    if(error){
+      alert("Error al guardar: " + error.message)
+      console.log(error)
+      setCargando(false)
+      return
+    }
+
+    // 2. Mandar a WhatsApp
+    const mensaje = `¡Nueva reserva El Portugués!%0ACliente: ${nombre}%0APatente: ${patente}%0AServicio: ${servicio}%0AFecha: ${fecha}%0AHora: ${hora}%0ATel: ${tel}`
     window.open(`https://wa.me/5493865859894?text=${mensaje}`, "_blank")
-    alert("Te va a abrir WhatsApp")
+
+    setCargando(false)
+    alert("¡Reserva guardada! Ahora te abre WhatsApp para confirmar.")
+
+    // Limpiar
+    setNombre(""); setPatente(""); setTel(""); setFecha(""); setHora("")
   }
 
   return (
@@ -40,10 +70,16 @@ export default function Reserva() {
       <input placeholder="Tu nombre" value={nombre} onChange={e=>setNombre(e.target.value)} style={{ width: "100%", padding: 12, margin: "8px 0", borderRadius: 8, border: "1px solid #ccc" }} />
       <input placeholder="Patente" value={patente} onChange={e=>setPatente(e.target.value)} style={{ width: "100%", padding: 12, margin: "8px 0", borderRadius: 8, border: "1px solid #ccc" }} />
       <input placeholder="Tu WhatsApp" value={tel} onChange={e=>setTel(e.target.value)} style={{ width: "100%", padding: 12, margin: "8px 0", borderRadius: 8, border: "1px solid #ccc" }} />
+      <div style={{display: "flex", gap: 8}}>
+        <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={{ width: "100%", padding: 12, margin: "8px 0", borderRadius: 8, border: "1px solid #ccc" }} />
+        <input type="time" value={hora} onChange={e=>setHora(e.target.value)} style={{ width: "100%", padding: 12, margin: "8px 0", borderRadius: 8, border: "1px solid #ccc" }} />
+      </div>
       <select value={servicio} onChange={e=>setServicio(e.target.value)} style={{ width: "100%", padding: 12, margin: "8px 0", borderRadius: 8, border: "1px solid #ccc" }}>
         {servicios.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
-      <button onClick={reservar} style={{ width: "100%", padding: 14, marginTop: 12, background: "#25D366", color: "white", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 16 }}>Reservar por WhatsApp</button>
+      <button onClick={reservar} disabled={cargando} style={{ width: "100%", padding: 14, marginTop: 12, background: "#25D366", color: "white", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 16 }}>
+        {cargando? "Guardando..." : "Reservar por WhatsApp"}
+      </button>
     </div>
   )
 }
