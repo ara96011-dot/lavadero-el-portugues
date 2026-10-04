@@ -103,7 +103,7 @@ export default function Home() {
       <section id="reserva" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
         <div className="glass-panel" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 28, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}><Calendar size={22} color="#d4a356" /> Reservar turno</h2>
-          <form onSubmit={handleReserva} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <form onSubmit={handleReserva} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
             <input value={patente} onChange={e => setPatente(e.target.value.toUpperCase())} placeholder="Patente (AA123BB)" style={{ padding: 14, borderRadius: 12, background: '#131b29', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre" style={{ padding: 14, borderRadius: 12, background: '#131b29', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             <input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="WhatsApp" style={{ padding: 14, borderRadius: 12, background: '#131b29', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
@@ -112,7 +112,7 @@ export default function Home() {
             </select>
             <input type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} style={{ padding: 14, borderRadius: 12, background: '#131b29', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
             <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} style={{ padding: 14, borderRadius: 12, background: '#131b29', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-            <div style={{ gridColumn: 'span 2' }}><button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>{loading ? 'Guardando...' : 'Confirmar Reserva'}</button>{msg && <p style={{ marginTop: 12, color: msg.includes('Error') ? '#f87171' : '#4ade80', textAlign: 'center' }}>{msg}</p>}</div>
+            <div style={{ gridColumn: '1 / -1' }}><button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>{loading ? 'Guardando...' : 'Confirmar Reserva'}</button>{msg && <p style={{ marginTop: 12, color: msg.includes('Error') ? '#f87171' : '#4ade80', textAlign: 'center' }}>{msg}</p>}</div>
           </form>
         </div>
       </section>
