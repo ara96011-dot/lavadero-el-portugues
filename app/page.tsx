@@ -1,5 +1,5 @@
-"use client"
 // @ts-nocheck
+"use client"
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Car, Clock, MapPin, Phone, Search, Calendar, Droplets, Sparkles, ShieldCheck, ArrowRight, MessageCircle, Wrench } from 'lucide-react'
@@ -20,7 +20,7 @@ const SERVICIOS = [
 export default function Home() {
   const [patente, setPatente] = useState('')
   const [consultaPatente, setConsultaPatente] = useState('')
-  const [turno, setTurno] = useState(null)
+  const [turno, setTurno] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
   const [form, setForm] = useState({ nombre: '', telefono: '', servicio: 'completo', fecha: '', hora: '09:00' })
