@@ -53,7 +53,7 @@ export default function Home() {
         {/* ACA CAMBIAS EL TITULO QUE ME DECIAS */}
         <div style={{ textAlign: 'center', margin: '32px 0' }}>
           <h1 style={{ fontSize: 'clamp(28px, 8vw, 48px)', fontWeight: 900, lineHeight: 1.1 }}>
-            Tu auto impecable <br/><span style={{ color: '#d4a356' }}>en 30 min</span>
+            Artesanos <br/><span style={{ color: '#d4a356' }}>del lavado</span>
           </h1>
           <p style={{ color: '#888', marginTop: '12px', fontSize: '16px' }}>
             Servicio premium con productos de primera. Reservá por acá y retirá sin esperar.
