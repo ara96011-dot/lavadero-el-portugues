@@ -1,86 +1,659 @@
-// @ts-nocheck
-"use client"
-import { useState } from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import {
+  Car,
+  Sparkles,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  ShieldCheck,
+  Search,
+  MessageCircle,
+  ChevronRight,
+  MapPin,
+  Phone,
+  LayoutDashboard,
+  Award,
+  ArrowRight
+} from 'lucide-react'
+import { getTurnos, saveTurno, Turno } from '@/lib/db'
 
-const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-
-const SERVICIOS = [
-  { id:'basico', nombre:'Lavado Básico', precio:8000 },
-  { id:'completo', nombre:'Lavado Completo', precio:12000 },
-  { id:'tapizados', nombre:'Tapizados', precio:25000 },
-  { id:'motor', nombre:'Motor', precio:15000 },
+const serviciosInfo = [
+  {
+    id: 'carroceria-interior',
+    nombre: 'Carrocería + Interior',
+    precio: '$12.000',
+    tiempo: '60 min',
+    popular: true,
+    imagen: '/images/hero.png',
+    descripcion: 'Lavado artesanal exterior con shampoo pH neutro, secado con microfibra de alta densidad y aspirado profundo interior.',
+    incluye: ['Shampoo Neutro de alta espuma', 'Aspirado completo de alfombras y asientos', 'Limpieza de cristales por dentro y fuera', 'Acondicionado de neumáticos']
+  },
+  {
+    id: 'lavado-completo-motor',
+    nombre: 'Lavado Completo + Motor a Vapor',
+    precio: '$15.000',
+    tiempo: '90 min',
+    popular: false,
+    imagen: '/images/detailing.png',
+    descripcion: 'Limpieza detallada de carrocería, habitáculo completo y desengrasado técnico del vano motor con vapor controlado.',
+    incluye: ['Lavado exterior + interior premium', 'Desengrasado y lavado de motor a vapor', 'Protector plastificante para plásticos de motor', 'Perfumado especial']
+  },
+  {
+    id: 'encerado-abrillantado',
+    nombre: 'Encerado & Abrillantado',
+    precio: '$18.000',
+    tiempo: '120 min',
+    popular: false,
+    imagen: '/images/interior.png',
+    descripcion: 'Aplicación de cera sintética de alta durabilidad para restaurar el brillo profundo y crear hidrofobia repelente al agua.',
+    incluye: ['Lavado de descontaminación', 'Encerado con Carnauba o Sintético', 'Brillo espejo y protección UV (3 meses)', 'Acondicionamiento de gomas y baguetas']
+  },
+  {
+    id: 'tratamiento-ceramico',
+    nombre: 'Tratamiento Cerámico / Grafeno',
+    precio: '$45.000',
+    tiempo: '1 Día',
+    popular: true,
+    imagen: '/images/detailing.png',
+    descripcion: 'Corrección de laca (pulido técnico de rayones) y protección cerámica multicapa con dureza 9H.',
+    incluye: ['Corrección de pintura en 2 o 3 pasos', 'Protección cerámica por 12 a 24 meses', 'Efecto superhidrofóbico y dureza 9H', 'Certificado de garantía']
+  },
+  {
+    id: 'tapizados-interior',
+    nombre: 'Descontaminación de Tapizados',
+    precio: '$28.000',
+    tiempo: '4 a 6hs',
+    popular: false,
+    imagen: '/images/interior.png',
+    descripcion: 'Inyección y extracción de manchas en asientos, alfombras y techos con secado rápido e higienización por ozono.',
+    incluye: ['Lavado por inyección y extracción', 'Eliminación de bacterias y malos olores', 'Higienización integral con ozono', 'Nutrición de plásticos y cueros']
+  },
+  {
+    id: 'restauracion-opticas',
+    nombre: 'Restauración de Ópticas',
+    precio: '$14.000',
+    tiempo: '45 min',
+    popular: false,
+    imagen: '/images/hero.png',
+    descripcion: 'Lijado al agua de capas opacas y barnizado o sellado cerámico para devolver la transparencia de fábrica.',
+    incluye: ['Lijado progresivo microfino', 'Pulido y abrillantado de policarbonato', 'Sellador UV protector', 'Mejora del 100% en potencia lumínica']
+  }
 ]
 
-const HORARIOS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00']
+export default function Home() {
+  const [patenteBuscar, setPatenteBuscar] = useState('')
+  const [resultadoBusqueda, setResultadoBusqueda] = useState<Turno | null>(null)
+  const [buscado, setBuscado] = useState(false)
 
-export default function Home(){
-  const [patente,setPatente]=useState(''); const [nombre,setNombre]=useState(''); const [tel,setTel]=useState(''); const [servicio,setServicio]=useState('completo'); const [fecha,setFecha]=useState(new Date().toISOString().split('T')[0]); const [hora,setHora]=useState('10:00'); const [ok,setOk]=useState(false)
+  // Turno Form State
+  const [nombre, setNombre] = useState('')
+  const [patente, setPatente] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [servicioSeleccionado, setServicioSeleccionado] = useState(serviciosInfo[0].nombre)
+  const [fecha, setFecha] = useState('')
+  const [hora, setHora] = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [reservaExito, setReservaExito] = useState(false)
 
-  // PARA QUE EL CLIENTE VEA EL ESTADO
-  const [consulta,setConsulta]=useState(''); const [estadoAuto,setEstadoAuto]=useState<any>(null)
-  const buscarEstado=async(e:any)=>{
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    setFecha(today)
+    setHora('10:00')
+  }, [])
+
+  const handleBuscarPatente = (e: React.FormEvent) => {
     e.preventDefault()
-    const {data}=await supa.from('reservas').select('*').ilike('patente',`%${consulta}%`).order('created_at',{ascending:false}).limit(1).single()
-    if(data) setEstadoAuto(data); else { setEstadoAuto(null); alert('Patente no encontrada') }
+    if (!patenteBuscar.trim()) return
+    const turnos = getTurnos()
+    const cleanPatente = patenteBuscar.trim().toUpperCase().replace(/[-\s]/g, '')
+    const match = turnos.find(t => t.patente.replace(/[-\s]/g, '') === cleanPatente)
+    setResultadoBusqueda(match || null)
+    setBuscado(true)
   }
 
-  const reservar=async(e:any)=>{e.preventDefault(); const s=SERVICIOS.find(x=>x.id===servicio); const {error}=await supa.from('reservas').insert([{patente:patente.toUpperCase(),cliente_nombre:nombre,cliente_telefono:tel,servicio:s?.nombre,precio:s?.precio,fecha,hora,estado:'En Espera'}]); if(!error) setOk(true)}
+  const handleReservar = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!nombre || !patente || !telefono || !fecha || !hora) {
+      alert('Por favor completá todos los campos del formulario.')
+      return
+    }
 
-  return(
-    <div style={{background:'#0b0f17', minHeight:'100vh'}}>
-      <header style={{background:'#131b29', border:'1px solid rgba(255,255,255,0.08)', margin:'12px', padding:'14px 20px', borderRadius:'16px', display:'flex', justifyContent:'space-between'}}>
-        <b style={{color:'#d4a356', fontFamily:'Outfit'}}>EL PORTUGUÉS</b><Link href="/admin" style={{background:'rgba(255,255,255,0.05)', padding:'8px 12px', borderRadius:'8px', fontSize:'12px', color:'#fff', textDecoration:'none'}}>Admin</Link>
+    setCargando(true)
+
+    const srvObj = serviciosInfo.find(s => s.nombre === servicioSeleccionado)
+    const precio = srvObj ? parseInt(srvObj.precio.replace(/[^0-9]/g, '')) : 12000
+
+    saveTurno({
+      nombre,
+      patente: patente.toUpperCase().trim(),
+      telefono,
+      servicio: servicioSeleccionado,
+      precio,
+      fecha,
+      hora,
+      estado: 'En espera'
+    })
+
+    setCargando(false)
+    setReservaExito(true)
+
+    const mensaje = encodeURIComponent(
+      'Hola Lavadero El Portugues!\nQuiero confirmar mi turno:\n' +
+      'Cliente: ' + nombre + '\n' +
+      'Patente: ' + patente.toUpperCase() + '\n' +
+      'Servicio: ' + servicioSeleccionado + '\n' +
+      'Fecha: ' + fecha + '\n' +
+      'Hora: ' + hora + '\n' +
+      'Tel: ' + telefono
+    )
+    window.open('https://wa.me/5493865859894?text=' + mensaje, '_blank')
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+      {/* Header */}
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        background: 'rgba(11, 15, 23, 0.85)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--border-color)',
+        padding: '16px 24px'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #d4a356, #b88536)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 15px rgba(212, 163, 86, 0.3)'
+            }}>
+              <Car size={24} color="#0b0f17" />
+            </div>
+            <div>
+              <span style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+                EL PORTUGUÉS
+              </span>
+              <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                Detailing & Lavado Profesional
+              </span>
+            </div>
+          </Link>
+
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <a href="#servicios" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Servicios</a>
+            <a href="#estado" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Estado de Auto</a>
+            <a href="#turnos" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Reservar Turno</a>
+            <Link href="/admin" className="btn-dark" style={{ padding: '8px 16px', fontSize: '13px' }}>
+              <LayoutDashboard size={16} /> Panel Admin
+            </Link>
+          </nav>
+        </div>
       </header>
 
-      <main style={{maxWidth:'560px', margin:'0 auto', padding:'12px 16px 80px'}}>
-
-        {/* BUSCAR ESTADO - NUEVO */}
-        <div style={{background:'#131b29', border:'1px solid rgba(212,163,86,0.2)', borderRadius:'16px', padding:'16px', marginBottom:'16px'}}>
-          <b style={{fontSize:'14px'}}>¿Dónde está mi auto? 🚗</b>
-          <p style={{fontSize:'12px', color:'#94a3b8', margin:'4px 0 10px'}}>Poné tu patente y mirá el estado</p>
-          <form onSubmit={buscarEstado} style={{display:'flex', gap:'8px'}}>
-            <input value={consulta} onChange={e=>setConsulta(e.target.value.toUpperCase())} placeholder="ABC123" style={{flex:1, padding:'12px', borderRadius:'12px', background:'#0f172a', border:'1px solid rgba(255,255,255,0.08)', color:'#fff'}}/>
-            <button style={{padding:'12px 16px', borderRadius:'12px', background:'#d4a356', border:'none', fontWeight:800}}>Ver</button>
-          </form>
-          {estadoAuto && (
-            <div style={{marginTop:'12px', padding:'12px', background:'#0f172a', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.08)'}}>
-              <div style={{display:'flex', justifyContent:'space-between'}}><b>{estadoAuto.patente}</b><span style={{background:'#d4a356', color:'#000', borderRadius:'99px', padding:'2px 10px', fontSize:'12px', fontWeight:800}}>{estadoAuto.estado}</span></div>
-              <div style={{fontSize:'12px', color:'#94a3b8', marginTop:'4px'}}>{estadoAuto.servicio} • {estadoAuto.fecha} {estadoAuto.hora?.slice(0,5)}</div>
+      {/* HERO SECTION */}
+      <section style={{
+        position: 'relative',
+        padding: '80px 24px 100px',
+        background: 'radial-gradient(circle at 50% 20%, rgba(212, 163, 86, 0.12) 0%, rgba(11, 15, 23, 1) 70%)',
+        overflow: 'hidden'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'center' }}>
+          
+          <div className="animate-fade-in">
+            <div className="badge badge-gold" style={{ marginBottom: '20px' }}>
+              <Sparkles size={14} /> Estética Automotriz Premium
             </div>
-          )}
-        </div>
+            <h1 style={{ fontSize: '48px', fontWeight: 900, lineHeight: 1.1, marginBottom: '20px' }}>
+              Tu auto en manos de <span style={{ color: 'var(--accent-gold)', background: 'linear-gradient(135deg, #d4a356, #f3c98b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>verdaderos especialistas</span>.
+            </h1>
+            <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: 1.6 }}>
+              En <b>Lavadero El Portugués</b> combinamos pasión artesanal, tecnología en vapor y productos de marcas líderes para que tu vehículo recupere el brillo y la elegancia de 0km.
+            </p>
 
-        <div style={{borderRadius:'16px', overflow:'hidden', height:'220px', background:`linear-gradient(to top, rgba(11,15,23,0.9), rgba(11,15,23,0.1)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800') center/cover`, display:'flex', alignItems:'flex-end', padding:'20px', border:'1px solid rgba(255,255,255,0.08)'}}>
-          <div><h1 style={{fontSize:'32px', lineHeight:'0.9', fontWeight:900, fontFamily:'Outfit'}}>Artesanos<br/><span style={{color:'#d4a356'}}>del lavado</span></h1></div>
-        </div>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '40px' }}>
+              <a href="#turnos" className="btn-gold">
+                <Calendar size={18} /> Reservar Turno Online
+              </a>
+              <a href="https://wa.me/5493865859894" target="_blank" rel="noopener noreferrer" className="btn-dark">
+                <MessageCircle size={18} color="var(--accent-green)" /> WhatsApp Directo
+              </a>
+            </div>
 
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginTop:'16px'}}>
-          {SERVICIOS.map(s=><button key={s.id} onClick={()=>setServicio(s.id)} style={{textAlign:'left', padding:'14px', borderRadius:'12px', background:servicio===s.id?'#1e293b':'#131b29', border:servicio===s.id?'1px solid #d4a356':'1px solid rgba(255,255,255,0.08)', color:'#fff'}}><div style={{fontWeight:700, fontSize:'13px'}}>{s.nombre}</div><div style={{color:'#d4a356', fontWeight:800, marginTop:'4px'}}>${s.precio.toLocaleString()}</div></button>)}
-        </div>
-
-        {!ok? (
-        <form onSubmit={reservar} style={{marginTop:'16px', background:'#131b29', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'16px', padding:'16px', display:'flex', flexDirection:'column', gap:'12px'}}>
-          <input required value={patente} onChange={e=>setPatente(e.target.value.toUpperCase())} placeholder="Patente" style={{padding:'14px', borderRadius:'12px', background:'#0f172a', border:'1px solid rgba(255,255,255,0.08)', color:'#fff'}}/>
-          <input required value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Tu nombre" style={{padding:'14px', borderRadius:'12px', background:'#0f172a', border:'1px solid rgba(255,255,255,0.08)', color:'#fff'}}/>
-          <input required value={tel} onChange={e=>setTel(e.target.value)} placeholder="WhatsApp" style={{padding:'14px', borderRadius:'12px', background:'#0f172a', border:'1px solid rgba(255,255,255,0.08)', color:'#fff'}}/>
-          <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={{padding:'14px', borderRadius:'12px', background:'#0f172a', border:'1px solid rgba(255,255,255,0.08)', color:'#fff'}}/>
-
-          {/* HORARIOS CON NÚMEROS - BÁSICO COMO ANTES */}
-          <div>
-            <div style={{fontSize:'12px', color:'#94a3b8', marginBottom:'8px'}}>Horarios disponibles hoy</div>
-            <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
-              {HORARIOS.map(h=><button key={h} type="button" onClick={()=>setHora(h)} style={{padding:'8px 12px', borderRadius:'8px', border:hora===h?'1px solid #d4a356':'1px solid rgba(255,255,255,0.08)', background:hora===h?'#d4a356':'#0f172a', color:hora===h?'#000':'#fff', fontWeight:hora===h?800:400, fontSize:'13px'}}>{h}</button>)}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+              <div>
+                <span style={{ fontSize: '28px', fontWeight: 900, color: 'var(--accent-gold)' }}>+5.000</span>
+                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>Autos Lavados</span>
+              </div>
+              <div>
+                <span style={{ fontSize: '28px', fontWeight: 900, color: 'var(--accent-gold)' }}>4.9</span>
+                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>Satisfacción Clientes</span>
+              </div>
+              <div>
+                <span style={{ fontSize: '28px', fontWeight: 900, color: 'var(--accent-gold)' }}>100%</span>
+                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>Garantía de Calidad</span>
+              </div>
             </div>
           </div>
 
-          <button style={{width:'100%', padding:'16px', borderRadius:'12px', background:'linear-gradient(135deg,#d4a356,#f3c98b)', border:'none', fontWeight:800}}>Reservar - {SERVICIOS.find(s=>s.id===servicio)?.nombre}</button>
-        </form>
-        ) : (
-          <div style={{marginTop:'16px', background:'#131b29', borderRadius:'16px', padding:'32px', textAlign:'center'}}><h3 style={{color:'#d4a356'}}>¡Reserva enviada!</h3><p style={{color:'#94a3b8', fontSize:'13px', marginTop:'8px'}}>Podés seguir tu auto arriba con la patente</p><button onClick={()=>setOk(false)} style={{width:'100%', marginTop:'16px', padding:'12px', borderRadius:'12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', color:'#fff'}}>Nueva reserva</button></div>
-        )}
-      </main>
+          <div style={{ position: 'relative' }}>
+            <div className="glass-card" style={{ padding: '12px', borderRadius: '24px', overflow: 'hidden', boxShadow: 'var(--shadow-main)' }}>
+              <div style={{ position: 'relative', width: '100%', height: '380px', borderRadius: '16px', overflow: 'hidden' }}>
+                <img
+                  src="/images/hero.png"
+                  alt="Lavadero El Portugués Detailing Studio"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(to top, rgba(11,15,23,0.95), transparent)',
+                  padding: '24px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <ShieldCheck size={28} color="var(--accent-gold)" />
+                    <div>
+                      <h4 style={{ fontSize: '16px', fontWeight: 700 }}>Tratamientos de alta gama</h4>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Secado a mano sin rayas ni marcas con microfibra súper soft.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* TRACK PATENTE STATUS SECTION */}
+      <section id="estado" style={{ padding: '60px 24px', background: 'var(--bg-panel)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+          <div className="badge badge-gold" style={{ marginBottom: '12px' }}>
+            <Clock size={14} /> Seguimiento en Tiempo Real
+          </div>
+          <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '12px' }}>Consultá el Estado de tu Vehículo</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '28px' }}>
+            ¿Dejaste tu auto en nuestro lavadero? Ingresá tu patente a continuación para saber en qué etapa del lavado se encuentra.
+          </p>
+
+          <form onSubmit={handleBuscarPatente} style={{ display: 'flex', gap: '12px', maxWidth: '500px', margin: '0 auto 24px' }}>
+            <input
+              type="text"
+              placeholder="Ej: AB123CD o AA123BB"
+              value={patenteBuscar}
+              onChange={e => setPatenteBuscar(e.target.value.toUpperCase())}
+              style={{
+                flex: 1,
+                padding: '14px 18px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                color: '#fff',
+                fontSize: '16px',
+                fontWeight: 700,
+                letterSpacing: '1px',
+                textAlign: 'center',
+                outline: 'none'
+              }}
+            />
+            <button type="submit" className="btn-gold">
+              <Search size={18} /> Consultar
+            </button>
+          </form>
+
+          {buscado && (
+            <div className="animate-fade-in glass-card" style={{ padding: '24px', textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
+              {resultadoBusqueda ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div>
+                      <span style={{ fontSize: '20px', fontWeight: 900, color: 'var(--accent-gold)' }}>
+                        {resultadoBusqueda.patente}
+                      </span>
+                      <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Cliente: {resultadoBusqueda.nombre}</p>
+                    </div>
+                    <span className={
+                      resultadoBusqueda.estado === 'En espera' ? 'badge badge-espera' :
+                      resultadoBusqueda.estado === 'En proceso' ? 'badge badge-proceso' :
+                      resultadoBusqueda.estado === 'Listo' ? 'badge badge-listo' : 'badge badge-entregado'
+                    } style={{ padding: '8px 16px', fontSize: '13px' }}>
+                      {resultadoBusqueda.estado}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Servicio contratado</span>
+                      <p style={{ fontSize: '13px', fontWeight: 700 }}>{resultadoBusqueda.servicio}</p>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fecha / Hora</span>
+                      <p style={{ fontSize: '13px', fontWeight: 700 }}>{resultadoBusqueda.fecha} a las {resultadoBusqueda.hora}</p>
+                    </div>
+                  </div>
+
+                  {resultadoBusqueda.estado === 'Listo' && (
+                    <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '8px', color: '#4ade80', fontSize: '13px', textAlign: 'center' }}>
+                      <b>¡Tu vehículo ya está listo para retirar!</b> Podés pasar por nuestro local cuando gustes.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <p>No se encontraron turnos activos para la patente <b>{patenteBuscar}</b>.</p>
+                  <p style={{ fontSize: '12px', marginTop: '6px' }}>Verificá la patente o consulta por WhatsApp.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* SERVICES SECTION */}
+      <section id="servicios" style={{ padding: '90px 24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+          <div className="badge badge-gold" style={{ marginBottom: '12px' }}>
+            <Award size={14} /> Catálogo Completo
+          </div>
+          <h2 style={{ fontSize: '36px', fontWeight: 900 }}>Nuestros Servicios de Excelencia</h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '12px auto 0' }}>
+            Elegí el nivel de detalle y protección que necesita tu auto. Trabajamos con equipamiento profesional de última generación.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+          {serviciosInfo.map(srv => (
+            <div key={srv.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ position: 'relative', height: '180px', overflow: 'hidden', borderRadius: '12px 12px 0 0' }}>
+                <img src={srv.imagen} alt={srv.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {srv.popular && (
+                  <span className="badge badge-gold" style={{ position: 'absolute', top: '12px', right: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+                    Más Solicitado
+                  </span>
+                )}
+                <div style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(11,15,23,0.85)', backdropFilter: 'blur(8px)', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--accent-gold)' }}>
+                  Tiempo: {srv.tiempo}
+                </div>
+              </div>
+
+              <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: 800 }}>{srv.nombre}</h3>
+                  <span style={{ fontSize: '22px', fontWeight: 900, color: 'var(--accent-gold)' }}>{srv.precio}</span>
+                </div>
+
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
+                  {srv.descripcion}
+                </p>
+
+                <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Incluye:</span>
+                  <ul style={{ listStyle: 'none', margin: '8px 0 20px', padding: 0 }}>
+                    {srv.incluye.map((inc, idx) => (
+                      <li key={idx} style={{ fontSize: '13px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <CheckCircle2 size={15} color="var(--accent-gold)" /> {inc}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <a href="#turnos" onClick={() => setServicioSeleccionado(srv.nombre)} className="btn-dark" style={{ width: '100%' }}>
+                    Agendar {srv.nombre} <ChevronRight size={16} />
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* RESERVAR TURNO FORM SECTION */}
+      <section id="turnos" style={{ padding: '90px 24px', background: 'linear-gradient(180deg, var(--bg-main) 0%, var(--bg-panel) 100%)', borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div className="glass-card" style={{ padding: '40px', borderRadius: '24px', position: 'relative' }}>
+            
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <div className="badge badge-gold" style={{ marginBottom: '12px' }}>
+                <Calendar size={14} /> Reserva Inmediata
+              </div>
+              <h2 style={{ fontSize: '32px', fontWeight: 900 }}>Reservá tu Turno en 1 Minuto</h2>
+              <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
+                Completá los datos a continuación para guardar tu turno en el sistema y confirmarlo al instante por WhatsApp.
+              </p>
+            </div>
+
+            {reservaExito ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.2)', border: '2px solid #22c55e', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <CheckCircle2 size={36} />
+                </div>
+                <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '10px' }}>¡Reserva Registrada Exitosamente!</h3>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
+                  Tu turno ha sido guardado. Se ha abierto una ventana de WhatsApp para enviar la confirmación al lavadero.
+                </p>
+                <button onClick={() => setReservaExito(false)} className="btn-gold">
+                  Hacer Otra Reserva
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleReservar} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                    Nombre y Apellido *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Juan Pérez"
+                    value={nombre}
+                    onChange={e => setNombre(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-color)',
+                      color: '#fff',
+                      fontSize: '15px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                    Patente del Vehículo *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. AF123BK"
+                    value={patente}
+                    onChange={e => setPatente(e.target.value.toUpperCase())}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-color)',
+                      color: '#fff',
+                      fontSize: '15px',
+                      textTransform: 'uppercase',
+                      fontWeight: 700
+                    }}
+                  />
+                </div>
+
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                    Teléfono / WhatsApp *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="Ej. 3865 123456"
+                    value={telefono}
+                    onChange={e => setTelefono(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-color)',
+                      color: '#fff',
+                      fontSize: '15px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                    Servicio Deseado *
+                  </label>
+                  <select
+                    value={servicioSeleccionado}
+                    onChange={e => setServicioSeleccionado(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-color)',
+                      color: '#fff',
+                      fontSize: '15px'
+                    }}
+                  >
+                    {serviciosInfo.map(s => (
+                      <option key={s.id} value={s.nombre}>
+                        {s.nombre} ({s.precio})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                    Fecha Deseada *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={fecha}
+                    onChange={e => setFecha(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-color)',
+                      color: '#fff',
+                      fontSize: '15px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                    Hora Estimada *
+                  </label>
+                  <select
+                    value={hora}
+                    onChange={e => setHora(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-color)',
+                      color: '#fff',
+                      fontSize: '15px'
+                    }}
+                  >
+                    <option value="08:30">08:30 hs</option>
+                    <option value="09:30">09:30 hs</option>
+                    <option value="10:30">10:30 hs</option>
+                    <option value="11:30">11:30 hs</option>
+                    <option value="14:30">14:30 hs</option>
+                    <option value="15:30">15:30 hs</option>
+                    <option value="16:30">16:30 hs</option>
+                    <option value="17:30">17:30 hs</option>
+                  </select>
+                </div>
+
+                <div style={{ gridColumn: 'span 2', marginTop: '12px' }}>
+                  <button type="submit" disabled={cargando} className="btn-gold" style={{ width: '100%', padding: '16px', fontSize: '16px' }}>
+                    {cargando ? 'Guardando turno...' : 'Confirmar Reserva por WhatsApp'} <ArrowRight size={18} />
+                  </button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      </section>
+
+      {/* FLOATING WHATSAPP BUTTON */}
+      <a
+        href="https://wa.me/5493865859894?text=Hola%20El%20Portugues!%20Quisiera%20consultar%20por%20un%20turno"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-float"
+        title="Chateá con nosotros por WhatsApp"
+      >
+        <div className="pulse-ring"></div>
+        <MessageCircle size={32} />
+      </a>
+
+      {/* FOOTER */}
+      <footer style={{ borderTop: '1px solid var(--border-color)', background: '#080b11', padding: '60px 24px 30px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px', marginBottom: '40px' }}>
+          <div>
+            <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '16px', color: '#fff' }}>
+              EL PORTUGUÉS
+            </h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              Especialistas en estética y limpieza automotriz. Cuidamos cada detalle para ofrecer la mejor experiencia y durabilidad a tu coche.
+            </p>
+          </div>
+
+          <div>
+            <h4 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: 'var(--accent-gold)' }}>Contacto & Ubicación</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={16} color="var(--accent-gold)" /> Av. Principal 1234, Tucumán
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Phone size={16} color="var(--accent-gold)" /> +54 9 3865 859894
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={16} color="var(--accent-gold)" /> Lunes a Sábado: 08:00 - 19:00 hs
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: 'var(--accent-gold)' }}>Acceso Administrativo</h4>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+              Gestión de clientes, turnos en vivo y caja diaria para el equipo del lavadero.
+            </p>
+            <Link href="/admin" className="btn-dark" style={{ width: '100%' }}>
+              <LayoutDashboard size={16} /> Entrar a Panel Admin
+            </Link>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)' }}>
+          © {new Date().getFullYear()} Lavadero El Portugués. Todos los derechos reservados.
+        </div>
+      </footer>
     </div>
   )
 }
