@@ -19,6 +19,76 @@ import {
   ArrowRight
 } from 'lucide-react'
 import { getTurnos, saveTurno, Turno } from '@/lib/db'
+import { createClient } from '@supabase/supabase-js'
+// poné esto arriba junto a los otros imports
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+const handleReservar = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!nombre || !patente || !telefono || !fecha || !hora) {
+    alert('Por favor completá todos los campos del formulario.')
+    return
+  }
+
+  setCargando(true)
+  try {
+    const srvObj = serviciosInfo.find(s => s.nombre === servicioSeleccionado)
+    const precio = srvObj ? parseInt(srvObj.precio.replace(/[^0-9]/g, '')) : 12000
+    const nuevaPatente = patente.toUpperCase().trim()
+
+    // 1. GUARDAR EN LA APP LOCAL (para que aparezca en el Kanban del admin)
+    const turnoLocal = {
+      nombre,
+      patente: nuevaPatente,
+      telefono,
+      servicio: servicioSeleccionado,
+      precio,
+      fecha,
+      hora,
+      estado: 'En espera' as const
+    }
+    saveTurno(turnoLocal)
+
+    // 2. GUARDAR EN SUPABASE (tabla reservas)
+    const { error } = await supabase.from('reservas').insert([{
+      nombre,
+      patente: nuevaPatente,
+      telefono,
+      servicio: servicioSeleccionado,
+      precio,
+      fecha,
+      hora,
+      estado: 'En espera'
+    }])
+    
+    if(error){
+      console.log('Supabase error:', error)
+      // no frenamos, sigue igual porque ya se guardó local
+    }
+
+    setReservaExito(true)
+
+    const mensaje = encodeURIComponent(
+      `Hola Lavadero El Portugues!\nQuiero confirmar mi turno:\n` +
+      `Cliente: ${nombre}\n` +
+      `Patente: ${nuevaPatente}\n` +
+      `Servicio: ${servicioSeleccionado}\n` +
+      `Fecha: ${fecha}\n` +
+      `Hora: ${hora}\n` +
+      `Tel: ${telefono}`
+    )
+    window.open('https://wa.me/5493865859894?text=' + mensaje, '_blank')
+
+  } catch(err){
+    console.error(err)
+    alert('Error al guardar, pero te abrimos WhatsApp igual')
+  } finally {
+    setCargando(false)
+  }
+}
 
 const serviciosInfo = [
   {
