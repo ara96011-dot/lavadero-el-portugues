@@ -7,77 +7,20 @@ import {
   Search, MessageCircle, ChevronRight, MapPin, Phone,
   LayoutDashboard, Award, ArrowRight
 } from 'lucide-react'
+
 type Turno = any
 const getTurnos = () => {
   if(typeof window==='undefined') return []
   try { return JSON.parse(localStorage.getItem('lavadero_turnos') || '[]') } catch { return [] }
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabase = supabaseUrl && supabaseKey? createClient(supabaseUrl, supabaseKey) : null
-
 const serviciosInfo = [
-  {
-    id: 'carroceria-interior',
-    nombre: 'Carrocería + Interior',
-    precio: '$12.000',
-    tiempo: '60 min',
-    popular: true,
-    imagen: '/images/hero.png',
-    descripcion: 'Lavado artesanal exterior con shampoo pH neutro, secado con microfibra de alta densidad y aspirado profundo interior.',
-    incluye: ['Shampoo Neutro de alta espuma', 'Aspirado completo de alfombras y asientos', 'Limpieza de cristales por dentro y fuera', 'Acondicionado de neumáticos']
-  },
-  {
-    id: 'lavado-completo-motor',
-    nombre: 'Lavado Completo + Motor a Vapor',
-    precio: '$15.000',
-    tiempo: '90 min',
-    popular: false,
-    imagen: '/images/detailing.png',
-    descripcion: 'Limpieza detallada de carrocería, habitáculo completo y desengrasado técnico del vano motor con vapor controlado.',
-    incluye: ['Lavado exterior + interior premium', 'Desengrasado y lavado de motor a vapor', 'Protector plastificante para plásticos de motor', 'Perfumado especial']
-  },
-  {
-    id: 'encerado-abrillantado',
-    nombre: 'Encerado & Abrillantado',
-    precio: '$18.000',
-    tiempo: '120 min',
-    popular: false,
-    imagen: '/images/interior.png',
-    descripcion: 'Aplicación de cera sintética de alta durabilidad para restaurar el brillo profundo y crear hidrofobia repelente al agua.',
-    incluye: ['Lavado de descontaminación', 'Encerado con Carnauba o Sintético', 'Brillo espejo y protección UV (3 meses)', 'Acondicionamiento de gomas y baguetas']
-  },
-  {
-    id: 'tratamiento-ceramico',
-    nombre: 'Tratamiento Cerámico / Grafeno',
-    precio: '$45.000',
-    tiempo: '1 Día',
-    popular: true,
-    imagen: '/images/detailing.png',
-    descripcion: 'Corrección de laca (pulido técnico de rayones) y protección cerámica multicapa con dureza 9H.',
-    incluye: ['Corrección de pintura en 2 o 3 pasos', 'Protección cerámica por 12 a 24 meses', 'Efecto superhidrofóbico y dureza 9H', 'Certificado de garantía']
-  },
-  {
-    id: 'tapizados-interior',
-    nombre: 'Descontaminación de Tapizados',
-    precio: '$28.000',
-    tiempo: '4 a 6hs',
-    popular: false,
-    imagen: '/images/interior.png',
-    descripcion: 'Inyección y extracción de manchas en asientos, alfombras y techos con secado rápido e higienización por ozono.',
-    incluye: ['Lavado por inyección y extracción', 'Eliminación de bacterias y malos olores', 'Higienización integral con ozono', 'Nutrición de plásticos y cueros']
-  },
-  {
-    id: 'restauracion-opticas',
-    nombre: 'Restauración de Ópticas',
-    precio: '$14.000',
-    tiempo: '45 min',
-    popular: false,
-    imagen: '/images/hero.png',
-    descripcion: 'Lijado al agua de capas opacas y barnizado o sellado cerámico para devolver la transparencia de fábrica.',
-    incluye: ['Lijado progresivo microfino', 'Pulido y abrillantado de policarbonato', 'Sellador UV protector', 'Mejora del 100% en potencia lumínica']
-  }
+  { id: 'carroceria-interior', nombre: 'Carrocería + Interior', precio: '$12.000', tiempo: '60 min', popular: true, imagen: '/images/hero.png', descripcion: 'Lavado artesanal exterior con shampoo pH neutro y aspirado profundo.', incluye: ['Shampoo Neutro', 'Aspirado completo', 'Limpieza de cristales', 'Acondicionado de neumáticos'] },
+  { id: 'lavado-completo-motor', nombre: 'Lavado Completo + Motor a Vapor', precio: '$15.000', tiempo: '90 min', popular: false, imagen: '/images/detailing.png', descripcion: 'Limpieza detallada y desengrasado técnico del motor a vapor.', incluye: ['Lavado exterior + interior', 'Motor a vapor', 'Protector plastificante', 'Perfumado'] },
+  { id: 'encerado-abrillantado', nombre: 'Encerado & Abrillantado', precio: '$18.000', tiempo: '120 min', popular: false, imagen: '/images/interior.png', descripcion: 'Cera sintética de alta durabilidad.', incluye: ['Lavado descontaminación', 'Encerado Carnauba', 'Protección UV', 'Acondicionamiento'] },
+  { id: 'tratamiento-ceramico', nombre: 'Tratamiento Cerámico / Grafeno', precio: '$45.000', tiempo: '1 Día', popular: true, imagen: '/images/detailing.png', descripcion: 'Corrección de laca y protección cerámica 9H.', incluye: ['Corrección 2 pasos', 'Protección 12 meses', 'Hidrofóbico', 'Garantía'] },
+  { id: 'tapizados-interior', nombre: 'Descontaminación de Tapizados', precio: '$28.000', tiempo: '4 a 6hs', popular: false, imagen: '/images/interior.png', descripcion: 'Inyección y extracción de manchas.', incluye: ['Inyección extracción', 'Elimina olores', 'Ozonización', 'Nutrición'] },
+  { id: 'restauracion-opticas', nombre: 'Restauración de Ópticas', precio: '$14.000', tiempo: '45 min', popular: false, imagen: '/images/hero.png', descripcion: 'Devolver transparencia de fábrica.', incluye: ['Lijado fino', 'Pulido', 'Sellador UV', 'Mejora luz'] }
 ]
 
 export default function Home() {
@@ -104,89 +47,57 @@ export default function Home() {
     if (!patenteBuscar.trim()) return
     const turnos = getTurnos()
     const cleanPatente = patenteBuscar.trim().toUpperCase().replace(/[-\s]/g, '')
-    const match = turnos.find(t => t.patente.replace(/[-\s]/g, '') === cleanPatente)
+    const match = turnos.find((t: any) => t.patente.replace(/[-\s]/g, '') === cleanPatente)
     setResultadoBusqueda(match || null)
     setBuscado(true)
   }
 
-  // ÚNICO handleReservar corregido - guarda local + supabase + whatsapp
   const handleReservar = async (e: React.FormEvent) => {
-  e.preventDefault()
-  if (!nombre || !patente || !telefono || !fecha || !hora) {
-    alert('Completá todos los campos')
-    return
-  }
-
-  setCargando(true)
-
-  try {
-    const srvObj = serviciosInfo.find(s => s.nombre === servicioSeleccionado)
-    const precio = srvObj ? parseInt(srvObj.precio.replace(/[^0-9]/g, '')) : 12000
-    const nuevaPatente = patente.toUpperCase().trim()
-
-    // --- GUARDADO LOCAL FORZADO (no usa lib/db) ---
-    const nuevoTurno = {
-      id: `tur_${Date.now()}`,
-      nombre,
-      patente: nuevaPatente,
-      telefono,
-      servicio: servicioSeleccionado,
-      precio,
-      fecha,
-      hora,
-      estado: 'En espera',
-      created_at: new Date().toISOString()
+    e.preventDefault()
+    if (!nombre ||!patente ||!telefono ||!fecha ||!hora) {
+      alert('Completá todos los campos')
+      return
     }
+    setCargando(true)
+    try {
+      const srvObj = serviciosInfo.find(s => s.nombre === servicioSeleccionado)
+      const precio = srvObj? parseInt(srvObj.precio.replace(/[^0-9]/g, '')) : 12000
+      const nuevaPatente = patente.toUpperCase().trim()
 
-    // leer y guardar directo en localStorage
-    const guardados = JSON.parse(localStorage.getItem('lavadero_turnos') || '[]')
-    guardados.unshift(nuevoTurno)
-    localStorage.setItem('lavadero_turnos', JSON.stringify(guardados))
-    console.log('Guardado local OK:', nuevoTurno)
-
-    // --- GUARDADO SUPABASE ---
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (!supabaseUrl || !supabaseKey) {
-      alert('FALTA CONFIGURAR SUPABASE EN VERCEL. Se guardó solo local.')
-    } else {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(supabaseUrl, supabaseKey)
-      
-      const { data, error } = await supabase.from('reservas').insert([{
-        nombre,
-        patente: nuevaPatente,
-        telefono,
-        servicio: servicioSeleccionado,
-        precio,
-        fecha,
-        hora,
-        estado: 'En espera'
-      }]).select()
-
-      if (error) {
-        console.error('Error Supabase:', error)
-        alert('Error Supabase: ' + error.message)
-      } else {
-        console.log('Guardado Supabase OK:', data)
+      const nuevoTurno = {
+        id: `tur_${Date.now()}`,
+        nombre, patente: nuevaPatente, telefono,
+        servicio: servicioSeleccionado, precio, fecha, hora,
+        estado: 'En espera', created_at: new Date().toISOString()
       }
+
+      const guardados = JSON.parse(localStorage.getItem('lavadero_turnos') || '[]')
+      guardados.unshift(nuevoTurno)
+      localStorage.setItem('lavadero_turnos', JSON.stringify(guardados))
+
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      if (!url ||!key) {
+        console.log('Sin env de Supabase, solo local')
+      } else {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(url, key)
+        const { error } = await supabase.from('reservas').insert([{
+          nombre, patente: nuevaPatente, telefono,
+          servicio: servicioSeleccionado, precio, fecha, hora, estado: 'En espera'
+        }])
+        if (error) alert('Error Supabase: ' + error.message)
+      }
+
+      setReservaExito(true)
+      const mensaje = encodeURIComponent(`Hola Lavadero El Portugues! Turno: ${nombre} - ${nuevaPatente} - ${servicioSeleccionado} - ${fecha} ${hora}`)
+      window.open('https://wa.me/5493865859894?text=' + mensaje, '_blank')
+    } catch (err: any) {
+      alert('Error: ' + err.message)
+    } finally {
+      setCargando(false)
     }
-
-    setReservaExito(true)
-
-    const mensaje = encodeURIComponent(
-      `Hola Lavadero El Portugues! Turno: ${nombre} - ${nuevaPatente} - ${servicioSeleccionado} - ${fecha} ${hora}`
-    )
-    window.open('https://wa.me/5493865859894?text=' + mensaje, '_blank')
-
-  } catch (err: any) {
-    console.error('Error total:', err)
-    alert('Error: ' + err.message)
-  } finally {
-    setCargando(false)
   }
-}
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
@@ -198,90 +109,60 @@ export default function Home() {
           </Link>
           <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a href="#servicios" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Servicios</a>
-            <a href="#estado" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Estado de Auto</a>
-            <a href="#turnos" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Reservar Turno</a>
+            <a href="#estado" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Estado</a>
+            <a href="#turnos" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Reservar</a>
             <Link href="/admin" className="btn-dark" style={{ padding: '8px 16px', fontSize: '13px' }}><LayoutDashboard size={16} /> Panel Admin</Link>
           </nav>
         </div>
       </header>
 
-      <section style={{ position: 'relative', padding: '80px 24px 100px', background: 'radial-gradient(circle at 50% 20%, rgba(212, 163, 86, 0.12) 0%, rgba(11, 15, 23, 1) 70%)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'center' }}>
-          <div className="animate-fade-in">
-            <div className="badge badge-gold" style={{ marginBottom: '20px' }}><Sparkles size={14} /> Estética Automotriz Premium</div>
-            <h1 style={{ fontSize: '48px', fontWeight: 900, lineHeight: 1.1, marginBottom: '20px' }}>Tu auto en manos de <span style={{ background: 'linear-gradient(135deg, #d4a356, #f3c98b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>verdaderos especialistas</span>.</h1>
-            <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: 1.6 }}>En <b>Lavadero El Portugués</b> combinamos pasión artesanal, tecnología en vapor y productos de marcas líderes.</p>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '40px' }}>
-              <a href="#turnos" className="btn-gold"><Calendar size={18} /> Reservar Turno Online</a>
-              <a href="https://wa.me/5493865859894" target="_blank" className="btn-dark"><MessageCircle size={18} color="var(--accent-green)" /> WhatsApp Directo</a>
-            </div>
-          </div>
-          <div><div className="glass-card" style={{ padding: '12px', borderRadius: '24px', overflow: 'hidden' }}><div style={{ position: 'relative', width: '100%', height: '380px', borderRadius: '16px', overflow: 'hidden' }}><img src="/images/hero.png" alt="Lavadero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div></div></div>
-        </div>
+      <section style={{ padding: '80px 24px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '42px', fontWeight: 900 }}>Tu auto en manos de <span style={{ color: '#d4a356' }}>especialistas</span>.</h1>
+        <a href="#turnos" className="btn-gold" style={{ marginTop: '24px', display: 'inline-flex' }}><Calendar size={18} /> Reservar Turno Online</a>
       </section>
 
       <section id="estado" style={{ padding: '60px 24px', background: 'var(--bg-panel)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <div className="badge badge-gold" style={{ marginBottom: '12px' }}><Clock size={14} /> Seguimiento en Tiempo Real</div>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '12px' }}>Consultá el Estado de tu Vehículo</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '16px' }}>Consultá el Estado de tu Vehículo</h2>
           <form onSubmit={handleBuscarPatente} style={{ display: 'flex', gap: '12px', maxWidth: '500px', margin: '0 auto 24px' }}>
-            <input type="text" placeholder="Ej: AB123CD" value={patenteBuscar} onChange={e => setPatenteBuscar(e.target.value.toUpperCase())} style={{ flex: 1, padding: '14px 18px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: '#fff', fontSize: '16px', fontWeight: 700, textAlign: 'center' }} />
+            <input type="text" placeholder="Patente" value={patenteBuscar} onChange={e => setPatenteBuscar(e.target.value.toUpperCase())} style={{ flex: 1, padding: '14px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: '#fff', fontWeight: 700, textAlign: 'center' }} />
             <button type="submit" className="btn-gold"><Search size={18} /> Consultar</button>
           </form>
-          {buscado && (
-            <div className="glass-card" style={{ padding: '24px', maxWidth: '500px', margin: '0 auto', textAlign: 'left' }}>
-              {resultadoBusqueda? (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}><div><span style={{ fontSize: '20px', fontWeight: 900, color: 'var(--accent-gold)' }}>{resultadoBusqueda.patente}</span><p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Cliente: {resultadoBusqueda.nombre}</p></div><span className={resultadoBusqueda.estado === 'En espera'? 'badge badge-espera' : resultadoBusqueda.estado === 'En proceso'? 'badge badge-proceso' : 'badge badge-listo'} style={{ padding: '8px 16px' }}>{resultadoBusqueda.estado}</span></div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px' }}><div><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Servicio</span><p style={{ fontSize: '13px', fontWeight: 700 }}>{resultadoBusqueda.servicio}</p></div><div><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fecha / Hora</span><p style={{ fontSize: '13px', fontWeight: 700 }}>{resultadoBusqueda.fecha} {resultadoBusqueda.hora}</p></div></div>
-                </div>
-              ) : <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>No se encontraron turnos para <b>{patenteBuscar}</b>.</p>}
-            </div>
-          )}
+          {buscado && <div className="glass-card" style={{ padding: '16px' }}>{resultadoBusqueda? <><b style={{ color: '#d4a356' }}>{resultadoBusqueda.patente}</b> - {resultadoBusqueda.nombre} - {resultadoBusqueda.estado}</> : <span>No encontrado {patenteBuscar}</span>}</div>}
         </div>
       </section>
 
-      <section id="servicios" style={{ padding: '90px 24px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '50px' }}><div className="badge badge-gold" style={{ marginBottom: '12px' }}><Award size={14} /> Catálogo Completo</div><h2 style={{ fontSize: '36px', fontWeight: 900 }}>Nuestros Servicios de Excelencia</h2></div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
-          {serviciosInfo.map(srv => (
-            <div key={srv.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ position: 'relative', height: '180px', overflow: 'hidden', borderRadius: '12px 12px 0 0' }}><img src={srv.imagen} alt={srv.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />{srv.popular && <span className="badge badge-gold" style={{ position: 'absolute', top: '12px', right: '12px' }}>Más Solicitado</span>}</div>
-              <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}><h3 style={{ fontSize: '20px', fontWeight: 800 }}>{srv.nombre}</h3><span style={{ fontSize: '22px', fontWeight: 900, color: 'var(--accent-gold)' }}>{srv.precio}</span></div>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>{srv.descripcion}</p>
-                <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                  <ul style={{ listStyle: 'none', margin: '8px 0 20px', padding: 0 }}>{srv.incluye.map((inc, idx) => <li key={idx} style={{ fontSize: '13px', display: 'flex', gap: '8px', marginBottom: '6px' }}><CheckCircle2 size={15} color="var(--accent-gold)" /> {inc}</li>)}</ul>
-                  <a href="#turnos" onClick={() => setServicioSeleccionado(srv.nombre)} className="btn-dark" style={{ width: '100%' }}>Agendar {srv.nombre} <ChevronRight size={16} /></a>
-                </div>
-              </div>
+      <section id="servicios" style={{ padding: '60px 24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          {serviciosInfo.map(s => (
+            <div key={s.id} className="glass-card" style={{ padding: '20px' }}>
+              <h3 style={{ fontWeight: 800 }}>{s.nombre}</h3><p style={{ color: '#d4a356', fontWeight: 900 }}>{s.precio}</p><p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{s.descripcion}</p>
+              <a href="#turnos" onClick={() => setServicioSeleccionado(s.nombre)} className="btn-dark" style={{ width: '100%', marginTop: '12px' }}>Agendar</a>
             </div>
           ))}
         </div>
       </section>
 
-      <section id="turnos" style={{ padding: '90px 24px', background: 'linear-gradient(180deg, var(--bg-main) 0%, var(--bg-panel) 100%)', borderTop: '1px solid var(--border-color)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div className="glass-card" style={{ padding: '40px', borderRadius: '24px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '32px' }}><div className="badge badge-gold" style={{ marginBottom: '12px' }}><Calendar size={14} /> Reserva Inmediata</div><h2 style={{ fontSize: '32px', fontWeight: 900 }}>Reservá tu Turno en 1 Minuto</h2></div>
+      <section id="turnos" style={{ padding: '60px 24px', background: 'var(--bg-panel)', borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <div className="glass-card" style={{ padding: '28px', borderRadius: '16px' }}>
+            <h2 style={{ fontSize: '26px', fontWeight: 900, textAlign: 'center', marginBottom: '20px' }}>Reservá tu Turno</h2>
             {reservaExito? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}><div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.2)', border: '2px solid #22c55e', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}><CheckCircle2 size={36} /></div><h3 style={{ fontSize: '24px', fontWeight: 800 }}>¡Reserva Registrada!</h3><p style={{ color: 'var(--text-secondary)', margin: '12px 0 24px' }}>Se guardó en la app y en Supabase. Se abrió WhatsApp.</p><button onClick={() => setReservaExito(false)} className="btn-gold">Hacer Otra Reserva</button></div>
+              <div style={{ textAlign: 'center' }}><CheckCircle2 size={40} color="#22c55e" style={{ margin: '0 auto' }} /><h3>¡Reserva guardada!</h3><p style={{ color: 'var(--text-secondary)' }}>Se abrió WhatsApp y ya está en el sistema.</p><button onClick={() => setReservaExito(false)} className="btn-gold" style={{ marginTop: '16px' }}>Otra reserva</button></div>
             ) : (
-              <form onSubmit={handleReservar} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>Nombre y Apellido *</label><input type="text" required value={nombre} onChange={e => setNombre(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }} /></div>
-                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>Patente *</label><input type="text" required value={patente} onChange={e => setPatente(e.target.value.toUpperCase())} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff', textTransform: 'uppercase', fontWeight: 700 }} /></div>
-                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>Teléfono *</label><input type="tel" required value={telefono} onChange={e => setTelefono(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }} /></div>
-                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>Servicio *</label><select value={servicioSeleccionado} onChange={e => setServicioSeleccionado(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }}>{serviciosInfo.map(s => <option key={s.id} value={s.nombre}>{s.nombre} ({s.precio})</option>)}</select></div>
-                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>Fecha *</label><input type="date" required value={fecha} onChange={e => setFecha(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }} /></div>
-                <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>Hora *</label><select value={hora} onChange={e => setHora(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }}><option value="08:30">08:30 hs</option><option value="09:30">09:30 hs</option><option value="10:30">10:30 hs</option><option value="11:30">11:30 hs</option><option value="14:30">14:30 hs</option><option value="15:30">15:30 hs</option><option value="16:30">16:30 hs</option><option value="17:30">17:30 hs</option></select></div>
-                <div style={{ gridColumn: 'span 2', marginTop: '12px' }}><button type="submit" disabled={cargando} className="btn-gold" style={{ width: '100%', padding: '16px', fontSize: '16px' }}>{cargando? 'Guardando...' : 'Confirmar Reserva por WhatsApp'} <ArrowRight size={18} /></button></div>
+              <form onSubmit={handleReservar} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ gridColumn: 'span 1' }}><label>Nombre *</label><input required value={nombre} onChange={e => setNombre(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }} /></div>
+                <div style={{ gridColumn: 'span 1' }}><label>Patente *</label><input required value={patente} onChange={e => setPatente(e.target.value.toUpperCase())} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff', textTransform: 'uppercase' }} /></div>
+                <div style={{ gridColumn: 'span 1' }}><label>Teléfono *</label><input required value={telefono} onChange={e => setTelefono(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }} /></div>
+                <div style={{ gridColumn: 'span 1' }}><label>Servicio *</label><select value={servicioSeleccionado} onChange={e => setServicioSeleccionado(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }}>{serviciosInfo.map(s => <option key={s.id} value={s.nombre}>{s.nombre}</option>)}</select></div>
+                <div style={{ gridColumn: 'span 1' }}><label>Fecha *</label><input type="date" required value={fecha} onChange={e => setFecha(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }} /></div>
+                <div style={{ gridColumn: 'span 1' }}><label>Hora *</label><select value={hora} onChange={e => setHora(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: '#fff' }}><option>08:30</option><option>09:30</option><option>10:30</option><option>11:30</option><option>14:30</option><option>15:30</option><option>16:30</option><option>17:30</option></select></div>
+                <div style={{ gridColumn: 'span 2' }}><button type="submit" disabled={cargando} className="btn-gold" style={{ width: '100%', padding: '14px' }}>{cargando? 'Guardando...' : 'Confirmar Reserva por WhatsApp'}</button></div>
               </form>
             )}
           </div>
         </div>
       </section>
-
-      <footer style={{ borderTop: '1px solid var(--border-color)', background: '#080b11', padding: '30px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>© {new Date().getFullYear()} Lavadero El Portugués</footer>
     </div>
   )
 }
