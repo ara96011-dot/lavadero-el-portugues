@@ -114,58 +114,45 @@ export default function Home() {
 
    const handleReservar = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!nombre ||!patente ||!telefono ||!fecha ||!hora) {
+    if (!nombre || !patente || !telefono || !fecha || !hora) {
       alert('Faltan datos')
       return
     }
+
+    // 1. ARMAMOS WHATSAPP ANTES DE TODO (para que no lo bloquee)
+    const msg = `¡NUEVO TURNO!%0A👤 ${nombre}%0A🚗 ${patente.toUpperCase()}%0A📱 ${telefono}%0A🔧 ${servicioSeleccionado}%0A📅 ${fecha} ${hora}%0A💰 $12000`
+    const waUrl = `https://wa.me/5493865859894?text=${msg}`
+    window.open(waUrl, '_blank') // se abre al instante
+
     setCargando(true)
     try {
-      // --- 1. GUARDAR LOCAL DIRECTO (sin lib/db) ---
-      try {
-        const KEY = 'lavadero_turnos'
-        const actuales = JSON.parse(localStorage.getItem(KEY) || '[]')
-        const nuevo = {
-          id: `tur_${Date.now()}`,
-          nombre, patente: patente.toUpperCase(), telefono,
-          servicio: servicioSeleccionado, precio: 12000,
-          fecha, hora, estado: 'En espera',
-          created_at: new Date().toISOString()
-        }
-        actuales.unshift(nuevo)
-        localStorage.setItem(KEY, JSON.stringify(actuales))
-        alert('✅ LOCAL GUARDADO: ' + actuales.length + ' turnos en este dispositivo')
-      } catch (err:any) {
-        alert('❌ ERROR LOCAL: ' + err.message)
-      }
+      // 2. GUARDADO LOCAL
+      const KEY = 'lavadero_turnos'
+      const actuales = JSON.parse(localStorage.getItem(KEY) || '[]')
+      actuales.unshift({
+        id: `tur_${Date.now()}`,
+        nombre, patente: patente.toUpperCase(), telefono,
+        servicio: servicioSeleccionado, precio: 12000,
+        fecha, hora, estado: 'En espera',
+        created_at: new Date().toISOString()
+      })
+      localStorage.setItem(KEY, JSON.stringify(actuales))
 
-      // --- 2. GUARDAR SUPABASE CON ALERTA DE ERROR ---
-      try {
-        const { createClient } = await import('@supabase/supabase-js')
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        if(!url || !key) {
-          alert('⚠️ Supabase URL/KEY vacías - Hacé Redeploy en Vercel')
-        } else {
-          const supa = createClient(url, key)
-          const { error } = await supa.from('reservas').insert([{
-            nombre, patente: patente.toUpperCase(), telefono,
-            servicio: servicioSeleccionado, precio: 12000, fecha, hora, estado: 'En espera'
-          }])
-          if(error) alert('❌ SUPABASE ERROR: ' + error.message)
-          else alert('✅ SUPABASE GUARDADO OK')
-        }
-      } catch (err:any) {
-        alert('❌ ERROR SUPABASE: ' + err.message)
-      }
+      // 3. GUARDADO SUPABASE (sin alerts)
+      const { createClient } = await import('@supabase/supabase-js')
+      const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      await supa.from('reservas').insert([{
+        nombre, patente: patente.toUpperCase(), telefono,
+        servicio: servicioSeleccionado, precio: 12000, fecha, hora, estado: 'En espera'
+      }])
 
       setReservaExito(true)
-      window.open('https://wa.me/5493865859894?text=' + encodeURIComponent(`Turno ${nombre} ${patente} ${fecha} ${hora}`), '_blank')
-
+    } catch (err) {
+      console.log(err)
     } finally {
       setCargando(false)
     }
   }
-
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)', overflowX: 'hidden' }}>
       {/* Header RESPONSIVE */}
