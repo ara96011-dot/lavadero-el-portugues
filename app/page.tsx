@@ -7,8 +7,11 @@ import {
   Search, MessageCircle, ChevronRight, MapPin, Phone,
   LayoutDashboard, Award, ArrowRight
 } from 'lucide-react'
-import { getTurnos, saveTurno, Turno } from '@/lib/db'
-import { createClient } from '@supabase/supabase-js'
+type Turno = any
+const getTurnos = () => {
+  if(typeof window==='undefined') return []
+  try { return JSON.parse(localStorage.getItem('lavadero_turnos') || '[]') } catch { return [] }
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
