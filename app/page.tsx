@@ -108,20 +108,50 @@ export default function Home() {
 
   // ÚNICO handleReservar corregido - guarda local + supabase + whatsapp
   const handleReservar = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!nombre ||!patente ||!telefono ||!fecha ||!hora) {
-      alert('Por favor completá todos los campos del formulario.')
-      return
+  e.preventDefault()
+  if (!nombre || !patente || !telefono || !fecha || !hora) {
+    alert('Completá todos los campos')
+    return
+  }
+
+  setCargando(true)
+
+  try {
+    const srvObj = serviciosInfo.find(s => s.nombre === servicioSeleccionado)
+    const precio = srvObj ? parseInt(srvObj.precio.replace(/[^0-9]/g, '')) : 12000
+    const nuevaPatente = patente.toUpperCase().trim()
+
+    // --- GUARDADO LOCAL FORZADO (no usa lib/db) ---
+    const nuevoTurno = {
+      id: `tur_${Date.now()}`,
+      nombre,
+      patente: nuevaPatente,
+      telefono,
+      servicio: servicioSeleccionado,
+      precio,
+      fecha,
+      hora,
+      estado: 'En espera',
+      created_at: new Date().toISOString()
     }
 
-    setCargando(true)
-    try {
-      const srvObj = serviciosInfo.find(s => s.nombre === servicioSeleccionado)
-      const precio = srvObj? parseInt(srvObj.precio.replace(/[^0-9]/g, '')) : 12000
-      const nuevaPatente = patente.toUpperCase().trim()
+    // leer y guardar directo en localStorage
+    const guardados = JSON.parse(localStorage.getItem('lavadero_turnos') || '[]')
+    guardados.unshift(nuevoTurno)
+    localStorage.setItem('lavadero_turnos', JSON.stringify(guardados))
+    console.log('Guardado local OK:', nuevoTurno)
 
-      // 1. Guardar en app local para Kanban
-      saveTurno({
+    // --- GUARDADO SUPABASE ---
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseKey) {
+      alert('FALTA CONFIGURAR SUPABASE EN VERCEL. Se guardó solo local.')
+    } else {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      const { data, error } = await supabase.from('reservas').insert([{
         nombre,
         patente: nuevaPatente,
         telefono,
@@ -130,36 +160,30 @@ export default function Home() {
         fecha,
         hora,
         estado: 'En espera'
-      })
+      }]).select()
 
-      // 2. Guardar en Supabase si está configurado
-      if (supabase) {
-        const { error } = await supabase.from('reservas').insert([{
-          nombre,
-          patente: nuevaPatente,
-          telefono,
-          servicio: servicioSeleccionado,
-          precio,
-          fecha,
-          hora,
-          estado: 'En espera'
-        }])
-        if (error) console.log('Supabase error:', error)
+      if (error) {
+        console.error('Error Supabase:', error)
+        alert('Error Supabase: ' + error.message)
+      } else {
+        console.log('Guardado Supabase OK:', data)
       }
-
-      setReservaExito(true)
-
-      const mensaje = encodeURIComponent(
-        `Hola Lavadero El Portugues!\nQuiero confirmar mi turno:\nCliente: ${nombre}\nPatente: ${nuevaPatente}\nServicio: ${servicioSeleccionado}\nFecha: ${fecha}\nHora: ${hora}\nTel: ${telefono}`
-      )
-      window.open('https://wa.me/5493865859894?text=' + mensaje, '_blank')
-
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setCargando(false)
     }
+
+    setReservaExito(true)
+
+    const mensaje = encodeURIComponent(
+      `Hola Lavadero El Portugues! Turno: ${nombre} - ${nuevaPatente} - ${servicioSeleccionado} - ${fecha} ${hora}`
+    )
+    window.open('https://wa.me/5493865859894?text=' + mensaje, '_blank')
+
+  } catch (err: any) {
+    console.error('Error total:', err)
+    alert('Error: ' + err.message)
+  } finally {
+    setCargando(false)
   }
+}
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
