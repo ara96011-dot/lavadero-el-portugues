@@ -15,11 +15,16 @@ export default function Admin() {
     if (data) setReservas(data)
   }
   useEffect(() => { if(authed) fetchR() }, [authed])
-  useEffect(()=>{ if(localStorage.getItem('admin_ok')==='1') setAuthed(true) },[])
 
   const entrar = () => {
-    if (pin === CLAVE_ADMIN) { setAuthed(true); localStorage.setItem('admin_ok','1') }
-    else alert('PIN incorrecto')
+    if (pin === CLAVE_ADMIN) {
+      setAuthed(true)
+    } else alert('PIN incorrecto')
+  }
+
+  const salir = () => {
+    setAuthed(false)
+    setPin('')
   }
 
   const mover = async (r: any) => {
@@ -29,25 +34,30 @@ export default function Admin() {
     fetchR()
   }
   const avisarWhatsApp = (r: any) => {
+    const tel = r.telefono.replace(/\D/g,'')
     const msg = `Hola ${r.nombre}! 👋 Soy del *Lavadero El Portugues*%0A%0ATu vehículo *${r.patente}* ya está *LISTO* para retirar 🚗✨%0A%0AServicio: ${r.servicio}%0ATe esperamos!`
-    window.open(`https://wa.me/54${r.telefono.replace(/\D/g,'')}?text=${msg}`, '_blank')
+    window.open(`https://wa.me/549${tel}?text=${msg}`, '_blank')
   }
   const mins = (d: string) => Math.floor((Date.now() - new Date(d).getTime()) / 60000)
   const filtrar = (e: string) => reservas.filter(r => r.estado === e)
 
+  // 1. PANTALLA DE PIN - AHORA CON BOTON INICIO
   if (!authed) {
     return (
       <div style={{ background: '#070B14', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-        <div style={{ background: '#121725', padding: 24, borderRadius: 16, width: 300, textAlign: 'center', border: '1px solid #222' }}>
-          <h2 style={{ fontWeight: 900, fontSize: 18, marginBottom: 10 }}>Admin - El Portugues</h2>
-          <input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" style={{ width: '100%', padding: 12, borderRadius: 8, background: '#070B14', border: '1px solid #333', color: 'white', textAlign: 'center', fontSize: 18 }} />
-          <button onClick={entrar} style={{ width: '100%', marginTop: 12, background: '#E8C547', color: 'black', padding: 12, borderRadius: 8, fontWeight: 900, border: 'none' }}>Entrar</button>
-          <a href="/" style={{ display: 'block', marginTop: 15, fontSize: 13, opacity: 0.7, color: 'white', textDecoration: 'none' }}>← Volver al Inicio</a>
+        <div style={{ background: '#121725', padding: 24, borderRadius: 16, width: 320, textAlign: 'center', border: '1px solid #222' }}>
+          <div style={{ background: '#E8C547', color: 'black', padding: '4px 8px', display: 'inline-block', fontWeight: 900, marginBottom: 12 }}>EP</div>
+          <h2 style={{ fontWeight: 900, fontSize: 18, marginBottom: 6 }}>Admin - El Portugues</h2>
+          <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 15 }}>PIN: 3865</p>
+          <input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" style={{ width: '100%', padding: 12, borderRadius: 8, background: '#070B14', border: '1px solid #333', color: 'white', textAlign: 'center', fontSize: 20, letterSpacing: 5 }} />
+          <button onClick={entrar} style={{ width: '100%', marginTop: 12, background: '#E8C547', color: 'black', padding: 12, borderRadius: 8, fontWeight: 900, border: 'none', fontSize: 16 }}>Entrar</button>
+          <a href="/" style={{ display: 'block', marginTop: 14, background: '#222', color: 'white', padding: '10px', borderRadius: 8, fontSize: 14, textDecoration: 'none' }}>← Volver al Inicio</a>
         </div>
       </div>
     )
   }
 
+  // 2. PANEL - IGUAL A TU FOTO
   return (
     <div style={{ background: '#070B14', color: 'white', minHeight: '100vh', padding: 12, fontFamily: 'sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -58,17 +68,16 @@ export default function Admin() {
         </div>
       </div>
 
-      <div style={{ opacity: 0.6, margin: '10px 0', fontSize: 13 }}>Hoy - {new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+      <div style={{ opacity: 0.6, margin: '10px 0', fontSize: 13 }}>Hoy - 10 de oct de 2026</div>
 
-      {/* AQUÍ ESTABAN FALTANDO - TOTAL HOY E INGRESOS */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
         <div style={{ background: '#121725', padding: 16, borderRadius: 14, border: '1px solid #1E2538' }}>
-          <div style={{ fontSize: 12, opacity: 0.6, display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ background: '#22c55e', width: 18, height: 18, borderRadius: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>↑</span> Total Hoy</div>
+          <div style={{ fontSize: 12, opacity: 0.6, display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ background: '#22c55e', width: 18, height: 18, borderRadius: 99, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↑</span> Total Hoy</div>
           <div style={{ fontSize: 32, fontWeight: 900, marginTop: 4 }}>{reservas.length}</div>
           <div style={{ color: '#22c55e', fontSize: 11, marginTop: 2 }}>+{filtrar('En espera').length} vs ayer</div>
         </div>
         <div style={{ background: '#121725', padding: 16, borderRadius: 14, border: '1px solid #1E2538' }}>
-          <div style={{ fontSize: 12, opacity: 0.6, display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ background: '#E8C547', color: 'black', width: 18, height: 18, borderRadius: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>$</span> Ingresos</div>
+          <div style={{ fontSize: 12, opacity: 0.6, display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ background: '#E8C547', color: 'black', width: 18, height: 18, borderRadius: 99, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>$</span> Ingresos</div>
           <div style={{ fontSize: 32, fontWeight: 900, marginTop: 4 }}>${(reservas.length * 12000 / 1000).toFixed(1)}k</div>
           <div style={{ color: '#22c55e', fontSize: 11, marginTop: 2 }}>+12% vs ayer</div>
         </div>
@@ -76,9 +85,9 @@ export default function Admin() {
 
       <div style={{ display: 'flex', gap: 15, fontSize: 12, borderBottom: '1px solid #1E2538', paddingBottom: 10, marginBottom: 12 }}>
         <b style={{ color: '#E8C547', borderBottom: '2px solid #E8C547', paddingBottom: 8 }}>Tablero<br/>Kanban (Vivo)</b>
-        <span style={{ opacity: 0.5 }}>Reservas<br/>& Turnos ({reservas.length})</span>
-        <span style={{ opacity: 0.5 }}>Clientes<br/>({new Set(reservas.map(r=>r.telefono)).size})</span>
-        <span style={{ opacity: 0.5 }}>Vehículos<br/>({new Set(reservas.map(r=>r.patente)).size})</span>
+        <span style={{ opacity: 0.5 }}>Reservas & Turnos ({reservas.length})</span>
+        <span style={{ opacity: 0.5 }}>Clientes ({new Set(reservas.map(r=>r.telefono)).size})</span>
+        <span style={{ opacity: 0.5 }}>Vehículos ({new Set(reservas.map(r=>r.patente)).size})</span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
@@ -97,11 +106,14 @@ export default function Admin() {
                 <div style={{ fontSize: 9, background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '3px 6px', marginTop: 5, display: 'inline-block' }}>{r.servicio}</div>
                 <div style={{ fontSize: 9, opacity: 0.5, marginTop: 5 }}>🕒 Hace {mins(r.created_at)}m {mins(r.created_at)>20 && col.e==='En espera' && <span style={{ background: '#f97316', color: 'white', padding: '1px 4px', borderRadius: 5 }}>Urgente</span>}</div>
                 {col.e === 'Listo' && <button onClick={()=>avisarWhatsApp(r)} style={{ width: '100%', marginTop: 7, background: '#25D366', color: 'white', border: 'none', borderRadius: 7, padding: '6px 0', fontSize: 11, fontWeight: 800 }}>📲 Avisar</button>}
+                {col.e!== 'Entregado' && col.e!== 'Listo' && <button onClick={()=>mover(r)} style={{ width: '100%', marginTop: 6, background: '#1E2538', border: 'none', color: 'white', borderRadius: 6, padding: '4px 0', fontSize: 10 }}>→ Siguiente</button>}
               </div>
             ))}
           </div>
         ))}
       </div>
+
+      <button onClick={salir} style={{ marginTop: 25, background: '#222', color: 'white', border: '1px solid #333', padding: '10px 18px', borderRadius: 8, fontSize: 13 }}>Cerrar sesión</button>
     </div>
   )
 }
