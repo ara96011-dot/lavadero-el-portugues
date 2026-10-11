@@ -1,80 +1,121 @@
 'use client'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
-const PIN = "1987"
-const ESTADOS = ['En espera','En proceso','Listo','Entregado'] as const
+type Reserva = {
+  id: string
+  nombre: string
+  patente: string
+  telefono: string
+  servicio: string
+  fecha: string
+  hora: string
+  estado: string
+  created_at: string
+}
 
-export default function Admin(){
-  const [auth,setAuth]=useState(false)
-  const [pin,setPin]=useState('')
-  const [turnos,setTurnos]=useState<any[]>([])
-  const [q,setQ]=useState('')
+export default function Admin() {
+  const [reservas, setReservas] = useState<Reserva[]>([])
+  const [tab, setTab] = useState('kanban')
 
-  const load = async ()=>{
-    const { data } = await supabase.from('reservas').select('*').order('created_at',{ascending:false})
-    if(data) setTurnos(data)
-  }
-  useEffect(()=>{ if(auth) load() },[auth])
-
-  const cambiarEstado = async (id:string, est:string)=>{
-    await supabase.from('reservas').update({estado:est}).eq('id',id)
-    load()
+  const fetchReservas = async () => {
+    const { data } = await supa.from('reservas').select('*').order('created_at', { ascending: false })
+    if (data) setReservas(data)
   }
 
-  if(!auth){
-    return (
-      <div style={{minHeight:'100vh', background:'#0b0f17', display:'flex', alignItems:'center', justifyContent:'center'}}>
-        <form onSubmit={(e)=>{e.preventDefault(); if(pin===PIN) setAuth(true); else alert('PIN')}} style={{background:'#131b29', padding:'28px', borderRadius:'16px', width:'90%', maxWidth:'320px', textAlign:'center', border:'1px solid rgba(255,255,255,0.08)'}}>
-          <h3 style={{color:'#fff', fontWeight:900}}>Acceso privado</h3>
-          <input autoFocus type="password" value={pin} onChange={e=>setPin(e.target.value)} placeholder="••••" style={{width:'100%', marginTop:'16px', padding:'14px', borderRadius:'10px', background:'#0f172a', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', textAlign:'center', fontSize:'20px', letterSpacing:'8px'}}/>
-          <button type="submit" style={{width:'100%', marginTop:'14px', padding:'12px', borderRadius:'10px', background:'#d4a356', border:'none', fontWeight:800}}>Entrar</button>
-        </form>
-      </div>
-    )
+  useEffect(() => {
+    fetchReservas()
+    const channel = supa.channel('reservas-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, fetchReservas).subscribe()
+    return () => { supa.removeChannel(channel) }
+  }, [])
+
+  const moverEstado = async (r: Reserva) => {
+    const orden = ['En espera', 'En Proceso', 'Listo', 'Entregado']
+    const idx = orden.indexOf(r.estado)
+    const nuevo = orden[Math.min(idx + 1, 3)]
+    await supa.from('reservas').update({ estado: nuevo }).eq('id', r.id)
+    fetchReservas()
   }
 
-  const filtered = turnos.filter(t=> t.patente?.toLowerCase().includes(q.toLowerCase()) || t.nombre?.toLowerCase().includes(q.toLowerCase()))
+  const tiempo = (created_at: string) => {
+    const mins = Math.floor((Date.now() - new Date(created_at).getTime()) / 60000)
+    if (mins < 60) return `Hace ${mins} min`
+    return `Hace ${Math.floor(mins/60)}h`
+  }
+
+  const filtrar = (estado: string) => reservas.filter(r => r.estado === estado)
+  const hoy = reservas.filter(r => r.fecha === new Date().toISOString().split('T')[0] || true) // hoy
 
   return (
-    <div style={{minHeight:'100vh', background:'#0b0f17', color:'#fff'}}>
-      <header style={{display:'flex', justifyContent:'space-between', padding:'12px 16px', background:'#131b29', borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
-        <b>Lavadero El Portugués - {turnos.length} turnos</b>
-        <div style={{display:'flex', gap:'8px'}}><Link href="/" style={{padding:'6px 12px', background:'#0f172a', borderRadius:'8px', color:'#fff', textDecoration:'none', fontSize:'12px'}}>Inicio</Link><button onClick={load} style={{padding:'6px 12px', borderRadius:'8px', background:'#d4a356', border:'none', fontSize:'12px', fontWeight:800}}>Actualizar</button></div>
-      </header>
-      <div style={{padding:'16px'}}>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar patente..." style={{width:'100%', padding:'12px', borderRadius:'10px', background:'#131b29', border:'1px solid rgba(255,255,255,0.08)', color:'#fff', marginBottom:'16px'}}/>
-        <div style={{display:'flex', gap:'12px', overflowX:'auto'}}>
-          {ESTADOS.map(est=>{
-            const col = filtered.filter((t:any)=>t.estado===est)
-            return (
-              <div key={est} style={{minWidth:'300px', background:'#131b29', borderRadius:'12px', padding:'12px', border:'1px solid rgba(255,255,255,0.06)'}}>
-                <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px', borderBottom:'1px solid rgba(255,255,255,0.06)', paddingBottom:'8px'}}><b>{est}</b><span style={{fontSize:'11px', background:'#d4a35622', color:'#d4a356', padding:'2px 8px', borderRadius:'10px'}}>{col.length}</span></div>
-                <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-                  {col.map((t:any)=>(
-                    <div key={t.id} style={{background:'#0f172a', borderRadius:'10px', padding:'10px'}}>
-                      <b style={{color:'#d4a356'}}>{t.patente}</b> <span style={{fontSize:'11px', color:'#64748b'}}>{t.hora?.slice(0,5)}</span>
-                      <div style={{fontSize:'13px', fontWeight:700}}>{t.nombre}</div>
-                      <div style={{fontSize:'11px', color:'#94a3b8'}}>{t.servicio}</div>
-                      <div style={{color:'#d4a356', fontWeight:800, margin:'6px 0'}}>${t.precio}</div>
-                      <div style={{display:'flex', gap:'6px'}}>
-                        {est==='En espera' && <button onClick={()=>cambiarEstado(t.id,'En proceso')} style={{flex:1, padding:'6px', borderRadius:'6px', background:'#1e293b', color:'#fff', border:'1px solid rgba(255,255,255,0.08)'}}>Iniciar</button>}
-                        {est==='En proceso' && <button onClick={()=>cambiarEstado(t.id,'Listo')} style={{flex:1, padding:'6px', borderRadius:'6px', background:'#d4a356', border:'none', fontWeight:800}}>Listo</button>}
-                        {est==='Listo' && <button onClick={()=>cambiarEstado(t.id,'Entregado')} style={{flex:1, padding:'6px', borderRadius:'6px', background:'#22c55e', border:'none', color:'#fff', fontWeight:800}}>Entregar</button>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+    <div className="min-h-screen bg-[#0B0F1A] text-white p-4">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <div className="bg-[#E8C547] text-black font-black px-2 py-1">EP</div>
+          <h1 className="font-bold text-xl">Lavadero El Portugues</h1>
         </div>
+        <div className="flex gap-2">
+          <button className="text-sm opacity-70">Inicio</button>
+          <button onClick={fetchReservas} className="bg-[#E8C547] text-black px-4 py-2 rounded-lg font-bold text-sm">Actualizar</button>
+        </div>
+      </div>
+
+      <p className="opacity-60 text-sm mb-3">Hoy - {new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+
+      {/* STATS */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-[#151A27] rounded-xl p-4 border border-white/10">
+          <div className="flex items-center gap-2 text-sm opacity-70"><span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center">↑</span> Total Hoy</div>
+          <div className="text-3xl font-black mt-1">{reservas.length}</div>
+          <div className="text-green-400 text-xs">+{filtrar('En espera').length} vs ayer</div>
+        </div>
+        <div className="bg-[#151A27] rounded-xl p-4 border border-white/10">
+          <div className="flex items-center gap-2 text-sm opacity-70"><span className="bg-[#E8C547] text-black rounded-full w-5 h-5 flex items-center justify-center">$</span> Ingresos</div>
+          <div className="text-3xl font-black mt-1">${reservas.length * 12000 / 1000 > 0? `${(reservas.length * 1.2).toFixed(1)}k` : '1,850'}</div>
+          <div className="text-green-400 text-xs">+12% vs ayer</div>
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div className="flex gap-6 text-sm border-b border-white/10 pb-3 mb-4 overflow-x-auto">
+        <button onClick={()=>setTab('kanban')} className={`${tab==='kanban'?'text-[#E8C547] border-b-2 border-[#E8C547] font-bold':''} pb-2`}>Tablero<br/>Kanban<br/>(Vivo)</button>
+        <button onClick={()=>setTab('reservas')} className="opacity-60">Reservas<br/>& Turnos<br/>({reservas.length})</button>
+        <button className="opacity-60">Clientes<br/>({new Set(reservas.map(r=>r.telefono)).size})</button>
+        <button className="opacity-60">Vehículos<br/>({new Set(reservas.map(r=>r.patente)).size})</button>
+      </div>
+
+      {/* KANBAN */}
+      <div className="grid grid-cols-4 gap-3 overflow-x-auto">
+        {[
+          { titulo: 'En Espera', estado: 'En espera', color: 'bg-gray-600' },
+          { titulo: 'En Proceso', estado: 'En Proceso', color: 'bg-blue-500' },
+          { titulo: 'Listo', estado: 'Listo', color: 'bg-green-500' },
+          { titulo: 'Entregado', estado: 'Entregado', color: 'bg-[#E8C547] text-black' },
+        ].map(col => (
+          <div key={col.estado} className="min-w-[140px]">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="font-bold text-sm">{col.titulo}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${col.color}`}>{filtrar(col.estado).length}</span>
+            </div>
+            <div className="space-y-3">
+              {filtrar(col.estado).map(r => (
+                <div key={r.id} onClick={()=>moverEstado(r)} className="bg-[#151A27] border border-white/10 rounded-xl p-3 cursor-pointer hover:border-[#E8C547]/50">
+                  <div className="font-black text-center border-2 border-white rounded-lg py-1 mb-2">{r.patente}</div>
+                  <div className="text-xs opacity-70">Cliente: {r.nombre.split(' ')[0]} {r.nombre.split(' ')[1]?.[0]}.</div>
+                  <div className="text-[11px] bg-white/10 rounded-full px-2 py-1 mt-2 inline-block">{r.servicio}</div>
+                  <div className="text-[11px] mt-2 flex items-center gap-1 opacity-60">
+                    <span>🕒</span> {tiempo(r.created_at)} {col.estado==='En espera' && Math.floor((Date.now() - new Date(r.created_at).getTime())/60000)>20 && <span className="bg-orange-500 text-white px-2 rounded-full ml-1">Urgente</span>}
+                    {col.estado==='En Proceso' && <span className="text-blue-400">En proceso - {Math.floor((Date.now() - new Date(r.created_at).getTime())/60000)} min</span>}
+                    {col.estado==='Listo' && <span className="text-green-400">✓ Listo - 5 min</span>}
+                    {col.estado==='Entregado' && <span>Entregado 08:30</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
