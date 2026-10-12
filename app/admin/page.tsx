@@ -48,7 +48,6 @@ export default function Admin() {
         <div style={{ background: '#121725', padding: 24, borderRadius: 16, width: 320, textAlign: 'center', border: '1px solid #222' }}>
           <div style={{ background: '#E8C547', color: 'black', padding: '4px 8px', display: 'inline-block', fontWeight: 900, marginBottom: 12 }}>EP</div>
           <h2 style={{ fontWeight: 900, fontSize: 18, marginBottom: 6 }}>Admin - El Portugues</h2>
-          <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 15 }}>PIN: 3865</p>
           <input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" style={{ width: '100%', padding: 12, borderRadius: 8, background: '#070B14', border: '1px solid #333', color: 'white', textAlign: 'center', fontSize: 20, letterSpacing: 5 }} />
           <button onClick={entrar} style={{ width: '100%', marginTop: 12, background: '#E8C547', color: 'black', padding: 12, borderRadius: 8, fontWeight: 900, border: 'none', fontSize: 16 }}>Entrar</button>
           <a href="/" style={{ display: 'block', marginTop: 14, background: '#222', color: 'white', padding: '10px', borderRadius: 8, fontSize: 14, textDecoration: 'none' }}>← Volver al Inicio</a>
@@ -104,7 +103,8 @@ export default function Admin() {
                 <div onClick={() => mover(r)} style={{ border: '1.5px solid #fff', borderRadius: 8, textAlign: 'center', fontWeight: 900, padding: '5px 0', cursor: 'pointer', fontSize: 12 }}>{r.patente}</div>
                 <div style={{ fontSize: 10, opacity: 0.6, marginTop: 5 }}>Cliente: {r.nombre}</div>
                 <div style={{ fontSize: 9, background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '3px 6px', marginTop: 5, display: 'inline-block' }}>{r.servicio}</div>
-                <div style={{ fontSize: 9, opacity: 0.5, marginTop: 5 }}>🕒 Hace {mins(r.created_at)}m {mins(r.created_at)>20 && col.e==='En espera' && <span style={{ background: '#f97316', color: 'white', padding: '1px 4px', borderRadius: 5 }}>Urgente</span>}</div>
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#E8C547', marginTop: 5 }}>${(r.precio || 12000).toLocaleString('es-AR')}</div>
+                <div style={{ fontSize: 9, opacity: 0.5, marginTop: 5 }}>🕒 Hace {mins(r.created_at)}m</div>
                 {col.e === 'Listo' && <button onClick={()=>avisarWhatsApp(r)} style={{ width: '100%', marginTop: 7, background: '#25D366', color: 'white', border: 'none', borderRadius: 7, padding: '6px 0', fontSize: 11, fontWeight: 800 }}>📲 Avisar</button>}
                 {col.e!== 'Entregado' && col.e!== 'Listo' && <button onClick={()=>mover(r)} style={{ width: '100%', marginTop: 6, background: '#1E2538', border: 'none', color: 'white', borderRadius: 6, padding: '4px 0', fontSize: 10 }}>→ Siguiente</button>}
               </div>
