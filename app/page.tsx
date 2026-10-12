@@ -24,7 +24,7 @@ const serviciosInfo = [
   {
     id: 'carroceria-interior',
     nombre: 'Carrocería + Interior',
-    precio: '$12.000',
+    precio: '$15.000',
     tiempo: '60 min',
     popular: true,
     imagen: '/images/hero.png',
@@ -34,7 +34,7 @@ const serviciosInfo = [
   {
     id: 'lavado-completo-motor',
     nombre: 'Lavado Completo + Motor a Vapor',
-    precio: '$15.000',
+    precio: '$26.000',
     tiempo: '90 min',
     popular: false,
     imagen: '/images/detailing.png',
@@ -44,7 +44,7 @@ const serviciosInfo = [
   {
     id: 'encerado-abrillantado',
     nombre: 'Encerado & Abrillantado',
-    precio: '$18.000',
+    precio: '$50.000',
     tiempo: '120 min',
     popular: false,
     imagen: '/images/interior.png',
@@ -64,7 +64,7 @@ const serviciosInfo = [
   {
     id: 'tapizados-interior',
     nombre: 'Descontaminación de Tapizados',
-    precio: '$28.000',
+    precio: '$40.000',
     tiempo: '4 a 6hs',
     popular: false,
     imagen: '/images/interior.png',
