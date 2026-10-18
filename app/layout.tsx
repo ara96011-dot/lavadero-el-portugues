@@ -2,9 +2,15 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Lavadero El Portugués | Detailing & Lavado Profesional de Autos',
-  description: 'Lavadero artesanal, detailing profesional, tratamiento cerámico, encerado y limpieza de tapizados. Turnos online y atención de primera calidad.',
-  keywords: 'lavadero de autos, detailing, lavadero el portugues, tratamiento ceramico, limpieza de tapizados, turnos lavadero',
+  title: 'Lavadero El Portugués | Detailing & Lavado',
+  description: 'Lavadero artesanal, detailing profesional',
+  keywords: 'lavadero de autos, detailing, lavadero concepcion',
+  manifest: '/manifest.json',
+  themeColor: '#0A58CA',
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
+  }
 }
 
 export default function RootLayout({
